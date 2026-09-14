@@ -4,19 +4,19 @@ defmodule LinkShortenerWeb.LinksController do
   alias LinkShortener.Links
 
   def get_links(conn, _params) do
-    links = Links.list_links()
+    user = conn.assigns.current_scope.user
 
-    data =
-      links
-      |> Enum.map(&link_json/1)
+    links = Enum.map(Links.list_links_by_user_id(user.id), fn link -> link_json(link) end)
 
     conn
     |> put_status(:ok)
-    |> json(%{data: data})
+    |> json(links)
   end
 
   def create_new_link(conn, %{"short_code" => short_code, "original_url" => original_url}) do
-    case create_link(original_url, short_code) do
+    user = conn.assigns.current_scope.user
+
+    case create_link(original_url, short_code, user) do
       {:ok, link} ->
         conn
         |> put_status(:created)
@@ -36,7 +36,9 @@ defmodule LinkShortenerWeb.LinksController do
   end
 
   def delete_link(conn, %{"short_code" => short_code}) do
-    case Links.get_by_short_code(short_code) do
+    user = conn.assigns.current_scope.user
+
+    case Links.get_by_short_code_and_user_id(short_code, user.id) do
       nil ->
         conn
         |> put_status(:not_found)
@@ -52,7 +54,9 @@ defmodule LinkShortenerWeb.LinksController do
   end
 
   def update_link(conn, %{"short_code" => short_code} = params) do
-    case Links.get_by_short_code(short_code) do
+    user = conn.assigns.current_scope.user
+
+    case Links.get_by_short_code_and_user_id(short_code, user.id) do
       nil ->
         conn
         |> put_status(:not_found)
@@ -104,8 +108,8 @@ defmodule LinkShortenerWeb.LinksController do
     end
   end
 
-  defp create_link(original_url, short_code) do
-    Links.create_link(%{
+  defp create_link(original_url, short_code, user) do
+    Links.create_link(user, %{
       original_url: original_url,
       short_code: short_code
     })
@@ -119,6 +123,7 @@ defmodule LinkShortenerWeb.LinksController do
       id: link.id,
       original_url: link.original_url,
       short_code: link.short_code,
+      user_id: link.user_id,
       short_url: short_url(link.short_code)
     }
   end

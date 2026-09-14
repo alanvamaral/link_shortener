@@ -35,4 +35,20 @@ defmodule LinkShortenerWeb.ConnCase do
     LinkShortener.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
+
+  def log_in_user(conn, user, opts \\ []) do
+    token = LinkShortener.Accounts.generate_user_session_token(user)
+
+    maybe_set_token_authenticated_at(token, opts[:token_authenticated_at])
+
+    conn
+    |> Phoenix.ConnTest.init_test_session(%{})
+    |> Plug.Conn.put_session(:user_token, token)
+  end
+
+  defp maybe_set_token_authenticated_at(_token, nil), do: nil
+
+  defp maybe_set_token_authenticated_at(token, authenticated_at) do
+    LinkShortener.AccountsFixtures.override_token_authenticated_at(token, authenticated_at)
+  end
 end
