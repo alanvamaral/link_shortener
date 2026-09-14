@@ -1,30 +1,27 @@
 defmodule LinkShortenerWeb.Router do
   use LinkShortenerWeb, :router
 
-  pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {LinkShortenerWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-  end
+  import LinkShortenerWeb.Plugs.UserAuth
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :fetch_current_scope_for_user
   end
 
-  scope "/", LinkShortenerWeb do
-    pipe_through :browser
-
-    live "/", LinkLive.Index, :index
-    live "/new", LinkLive.Form, :new
-    live "/:id", LinkLive.Show, :show
-    live "/:id/edit", LinkLive.Form, :edit
+  pipeline :authenticated do
+    plug :require_authenticated_user
   end
 
   scope "/api", LinkShortenerWeb do
     pipe_through :api
+    post "/auth/register", AuthController, :register
+    post "/auth/login", AuthController, :login
+  end
+
+  scope "/api", LinkShortenerWeb do
+    pipe_through [:api, :authenticated]
+
+    get "/me", AuthController, :me
 
     get "/links", LinksController, :get_links
     post "/link", LinksController, :create_new_link

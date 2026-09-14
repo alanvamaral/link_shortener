@@ -7,14 +7,14 @@ defmodule LinkShortener.LinksFixtures do
   @doc """
   Generate a link.
   """
-  def link_fixture(attrs \\ %{}) do
-    {:ok, link} =
-      attrs
-      |> Enum.into(%{
+  def link_fixture(user, attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
         original_url: "some original_url",
         short_code: "some short_code"
       })
-      |> LinkShortener.Links.create_link()
+
+    {:ok, link} = LinkShortener.Links.create_link(user, attrs)
 
     link
   end
